@@ -12,6 +12,12 @@ class Arm:
         self.estimate_p = 0.0
         self.n = 0
 
+    def get_used_count(self):
+        return self.n
+
+    def get_p(self):
+        return self.estimate_p
+
     def update(self, reward):
         self.n += 1
         self.estimate_p += (reward - self.estimate_p)/self.n
@@ -25,11 +31,13 @@ class Bendit:
         self.arm_list = [Arm(i, np.random.randn()) for i in range(self.arm_count)]
         self.explore_count = 0
         self.exploit_count = 0
+        self.select_count = 0
 
     def get_arm_count(self):
         return self.arm_count
 
-    def select(self, select_method='greedy'):
+    def select(self, select_method='greedy', c=2.0):
+        self.select_count += 1
         '''
         选择一个arm，返回索引
         '''
@@ -49,8 +57,13 @@ class Bendit:
                 idx = np.argmax([a.estimate_p for a in self.arm_list])
                 return idx, int(idx == self.best())
         elif select_method == 'ucb':
-            
-            raise NotImplementedError
+            score = list()
+            for i, e in enumerate(self.arm_list):
+                if e.get_used_count() == 0:
+                    return i, int(i == self.best())
+                score.append(e.get_p() + c*np.sqrt(np.log(self.select_count)/e.get_used_count())) 
+            b = np.argmax(score)
+            return b, int(b == self.best())
 
     def best(self):
         return np.argmax([a.real_p for a in self.arm_list])
@@ -61,13 +74,13 @@ class Bendit:
         return reward
 
 
-def run(e, times):
+def run(e, times, select_method='greedy'):
     b = Bendit(e)
     used_count_list = [0 for i in range(b.get_arm_count())]
     reward = list()
     best = list()
     for i in range(times):
-        idx, is_best = b.select()
+        idx, is_best = b.select(select_method=select_method)
         used_count_list[idx] += 1
         reward.append(b.act(idx))
         best.append(is_best)
@@ -77,14 +90,19 @@ def run(e, times):
 def main():
     count = 2000
     times = 1000
-    epsilon = [0.0, 0.01, 0.1]
+    # epsilon = [0.0, 0.01, 0.1]
+    epsilon = [0.1, -1]
     reward_list = list()
     best_list = list()
     for e in epsilon:
         a = list()
         b = list()
         for i in range(count):
-            reward, best = run(e, times)
+            if e < 0:
+                select_method = 'ucb'
+            else:
+                select_method = 'greedy'
+            reward, best = run(e, times, select_method)
             a.append(reward)
             b.append(best)
         reward_list.append(a)
@@ -102,10 +120,10 @@ def main():
         plt.plot(range(times), np.mean(np.asarray(b), axis=0), label='e=%.2f'%epsilon[i])
     plt.xlabel('steps')
     plt.ylabel('% optimal choice')
-    plt.legend(loc='upper left', frameon=False)
+    plt.legend(loc='bottom right', frameon=False)
     plt.legend()
 
-    plt.savefig('./bendit.png')
+    # plt.savefig('./bendit.png')
     plt.show(block=True)
 
 
