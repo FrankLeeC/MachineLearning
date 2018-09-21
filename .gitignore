@@ -1,0 +1,15 @@
+.idea/
+.vscode/
+example1/
+example2/
+example3/
+example4/
+example5/
+example6/
+example7/
+libsvmtest/
+numpy_test/
+svm_example/
+__pycache__
+test/*
+
