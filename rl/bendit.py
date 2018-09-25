@@ -124,6 +124,7 @@ def main():
     count = 2000
     times = 1000
     # epsilon = [0.0, 0.01, 0.1]
+    # select_method = ['greedy', 'greedy', 'greedy']
     epsilon = [0.1, -1, -1]
     select_method = ['greedy', 'ucb', 'gba']
     reward_list = list()
