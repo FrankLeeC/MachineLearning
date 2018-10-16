@@ -45,6 +45,10 @@ def random_policy():
             m['%d_%d'%(j, i)] = random_action()
     return m
 
+def get_action(position, policy):
+    i, j = position
+    return policy['%d_%d'%(j, i)]
+
 def is_forbidden(position):
     i, j = position
     return i < 0 or i >= HEIGHT or j < 0 or j >= WIDTH 
@@ -108,6 +112,21 @@ def run():
             break 
         SQUARE = copy.deepcopy(COPY_SQUARE)
     print('iteration: ', count)
+
+def step(policy):
+    square = [
+    [0, 0, 0, 1],
+    [0, 0, 0, -1],
+    [0, 0, 0, 0]
+    ]
+    changed = True
+    for i in range(HEIGHT):
+        for j in range(WIDTH):
+            if (j == 3 and i < 2) or (i == 1 and j == 1):
+                continue
+            position = (i, j)
+
+    return changed, policy
 
 def main():
     run()
