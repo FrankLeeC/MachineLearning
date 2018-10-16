@@ -93,3 +93,19 @@ $R_k$的系数依赖于它离当前时间的长短。即 exponential recency-wei
 
 ---
 
+### policy and value function
+
+state-value function $v_{\pi}(s)$ 用来衡量在policy $\pi$ 下，当前状态的好坏程度。
+
+执行不同的 policy ，得到不同的 $v_{\pi}(s)$，如果一个 policy 满足要求$v_{\pi}(s) \ge v_{\pi^{'}} \quad \forall s \in S$，这个$\pi$就是 optimal policy $\pi_*$，此时的 value function 记作 $v_{*}(s) = max_{\pi}v_{\pi}(s)$。
+
+action-value function $q_{\pi}(s, a)$ 用来衡量在policy $\pi$ 下，执行动作a的好坏程度。
+
+针对同一组(s, a)， 执行不同的 policy，得到的$q_{\pi}(s, a)$不同。同理，optimal policy $\pi_*$ 使 $q_{\pi_*}(s, a)$最大。
+
+$q_*(s, a) = max_{\pi}q_{\pi}(s, a)$。
+
+
+
+
+
