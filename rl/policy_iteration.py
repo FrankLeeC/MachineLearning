@@ -50,18 +50,22 @@ def get_other_actions(position, policy):
         new_actions.append([UP, LEFT, RIGHT])
         new_actions.append([RIGHT, UP, DOWN])
         new_actions.append([DOWN, RIGHT, LEFT])
+        new_actions.append([LEFT, UP, DOWN])
     elif old_actions[0] == UP:
         new_actions.append([RIGHT, UP, DOWN])
         new_actions.append([DOWN, RIGHT, LEFT])
         new_actions.append([LEFT, UP, DOWN])
+        new_actions.append([UP, LEFT, RIGHT])
     elif old_actions[0] == RIGHT:
         new_actions.append([DOWN, RIGHT, LEFT])
         new_actions.append([LEFT, UP, DOWN])
         new_actions.append([UP, LEFT, RIGHT])
+        new_actions.append([RIGHT, UP, DOWN])
     else:
         new_actions.append([LEFT, UP, DOWN])
         new_actions.append([UP, LEFT, RIGHT])
         new_actions.append([RIGHT, UP, DOWN])
+        new_actions.append([DOWN, RIGHT, LEFT])
     return new_actions
 
 
@@ -119,21 +123,24 @@ def policy_improvement(values, policy):
             old_actions = get_actions(position, policy)
             new_actions = get_other_actions(position, policy)
             for k, actions in enumerate(new_actions):
-                new_value = values[i][j]
+                new_value = 0.0
                 for n, a in enumerate(actions):
                     new_position = move(position, a)
-                    i, j = new_position
-                    value = values[i][j]
+                    ni, nj = new_position
+                    value = values[ni][nj]
                     if n == 0:
                         new_value += 0.8 * (get_reward(position) + 0.9 * value)
                     else:
                         new_value += 0.1 * (get_reward(position) + 0.9 * value)
                 new_values[k] = new_value
+            # new_values[3] = values[i][j]
+            # new_actions.append(old_actions)
             new_values = dict(zip(new_values.values(), new_values.keys()))
-            max_actions = new_actions[new_values[max(new_values.keys())]]
+            max_new_value = max(new_values.keys())
+            max_actions = new_actions[new_values[max_new_value]]
             if max_actions != old_actions:
                 refresh_policy(policy, max_actions, position)
-                print_max_action(position, max_actions, old_actions)
+                # print_max_action(position, max_actions, old_actions)
                 changed = True
     return changed, policy
 
@@ -162,11 +169,13 @@ def run():
     ]
     policy = random_policy()
     while True:
-        print('----------------------')
+        # print('----------------------')
         value = policy_evaluation(value, policy)
         changed, policy = policy_improvement(value, policy)
         if not changed:
             break
+    for k, v in policy.items():
+        print(k, ':', actions_to_string(v[0]))
 
 
 def main():
