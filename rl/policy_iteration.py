@@ -71,11 +71,36 @@ def get_other_actions(position, policy):
 
 def is_forbidden(position):
     i, j = position
-    return i < 0 or i >= HEIGHT or j < 0 or j >= WIDTH 
+    return i < 0 or i >= HEIGHT or j < 0 or j >= WIDTH or (i == 1 and j == 1)
 
 
 def get_reward(position):
-    return 0.0
+    return 0
+    # position = list(position)
+    # if position == [0, 3]:
+    #     return 6
+    # if position == [0, 2]:
+    #     return 5
+    # if position == [0, 1]:
+    #     return 4
+    # if position == [0, 0]:
+    #     return 3
+    # if position == [1, 3]:
+    #     return -5
+    # if position == [1, 2]:
+    #     return 4
+    # if position == [1, 1]:
+    #     return float('-Inf')
+    # if position == [1, 0]:
+    #     return 2
+    # if position == [2, 3]:
+    #     return 2
+    # if position == [2, 2]:
+    #     return 3
+    # if position == [2, 1]:
+    #     return 2
+    # if position == [2, 0]:
+    #     return 1
 
 
 def move(current, action):
@@ -83,6 +108,18 @@ def move(current, action):
     if is_forbidden(new_position):
         return current 
     return new_position
+
+
+def max_sub(sub):
+    sub = np.abs(sub)
+    m = sub[0][0]
+    for i in range(HEIGHT):
+        for j in range(WIDTH):
+            if (j == 3 and i < 2) or (i == 1 and j == 1):
+                continue
+            if sub[i][j] > m:
+                m = sub[i][j]
+    return m
 
 
 def policy_evaluation(old_values, policy):
@@ -99,13 +136,14 @@ def policy_evaluation(old_values, policy):
                 position = (i, j)
                 for n, a in enumerate(get_actions(position, policy)):
                     new_position = move(position, a)
-                    i, j = new_position
-                    value = old_values[i][j]
+                    ni, nj = new_position
+                    value = old_values[ni][nj]
                     if n == 0:
                         copy_values[i][j] += 0.8*(get_reward(position) + 0.9 * value)
                     else:
                         copy_values[i][j] += 0.1*(get_reward(position) + 0.9 * value)
-        m = np.max(np.asarray(copy_values) - np.asarray(old_values))
+        sub = np.asarray(copy_values) - np.asarray(old_values)
+        m = max_sub(sub)
         if m < 0.000001:
             break
         old_values = copy.deepcopy(copy_values)
@@ -153,12 +191,12 @@ def print_max_action(position, max_action, old_actions):
 
 def actions_to_string(a):
     if a == LEFT:
-        return 'left'
+        return '<-'
     if a == RIGHT:
-        return 'right'
+        return '->'
     if a == UP:
-        return 'up'
-    return 'down' 
+        return 'i'
+    return '!' 
 
 
 def run():
@@ -168,14 +206,19 @@ def run():
     [0, 0, 0, 0]
     ]
     policy = random_policy()
+    count = 0
     while True:
+        count += 1
         # print('----------------------')
         value = policy_evaluation(value, policy)
+        # print(value)
         changed, policy = policy_improvement(value, policy)
         if not changed:
             break
+    print('count:', count)
     for k, v in policy.items():
         print(k, ':', actions_to_string(v[0]))
+    print(value)
 
 
 def main():
