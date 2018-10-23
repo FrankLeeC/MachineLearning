@@ -43,30 +43,12 @@ def get_actions(position, policy):
 
 
 def get_other_actions(position, policy):
-    new_actions = list()
-    i, j = position
-    old_actions = policy['%d_%d'%(i, j)]
-    if old_actions[0] == LEFT:
-        new_actions.append([UP, LEFT, RIGHT])
-        new_actions.append([RIGHT, UP, DOWN])
-        new_actions.append([DOWN, RIGHT, LEFT])
-        new_actions.append([LEFT, UP, DOWN])
-    elif old_actions[0] == UP:
-        new_actions.append([RIGHT, UP, DOWN])
-        new_actions.append([DOWN, RIGHT, LEFT])
-        new_actions.append([LEFT, UP, DOWN])
-        new_actions.append([UP, LEFT, RIGHT])
-    elif old_actions[0] == RIGHT:
-        new_actions.append([DOWN, RIGHT, LEFT])
-        new_actions.append([LEFT, UP, DOWN])
-        new_actions.append([UP, LEFT, RIGHT])
-        new_actions.append([RIGHT, UP, DOWN])
-    else:
-        new_actions.append([LEFT, UP, DOWN])
-        new_actions.append([UP, LEFT, RIGHT])
-        new_actions.append([RIGHT, UP, DOWN])
-        new_actions.append([DOWN, RIGHT, LEFT])
-    return new_actions
+    return [
+        [UP, LEFT, RIGHT],
+        [RIGHT, UP, DOWN],
+        [DOWN, RIGHT, LEFT],
+        [LEFT, UP, DOWN]
+    ]
 
 
 def is_forbidden(position):
