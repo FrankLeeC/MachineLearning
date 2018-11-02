@@ -30,7 +30,7 @@ def reset():
 
 def is_forbidden(position):
     i, j = position
-    return i < 0 or i >= HEIGHT or j < 0 or j >= WIDTH 
+    return i < 0 or i >= HEIGHT or j < 0 or j >= WIDTH or (i == j == 1)
 
 
 def get_actions(position):
