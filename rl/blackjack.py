@@ -3,7 +3,9 @@
 import random
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 import matplotlib.pyplot as plt
+import seaborn as sns
 from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 
 
@@ -89,18 +91,21 @@ def generate_episode():
     return states, rewards
 
 
-def show_image(episode, b):
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    x, y, z = list(), list(), list()
+def show_image(episode, b, title):
+    sns.set()
+    data = np.asarray(np.zeros((22, 12), dtype=float))
+    print(np.shape(data))
     for k, v in episode.items():
         xy = k.split('_')
-        x.append(int(xy[0]))
-        y.append(int(xy[1]))
-        z.append(float(v))
-    ax.scatter(x, y, z)
-    ax.set_zlim(-1.01, 1.01)
-    plt.show(block=b)
+        data[int(xy[0])][int(xy[1])] = float(v)
+    ax = sns.heatmap(data, cmap='YlGnBu')
+    ax.set_xlim(2, 12)
+    ax.set_ylim(12, 22)
+    ax.set_xlabel('dealer showing')
+    ax.set_ylabel('plar sum')
+    ax.set_title(title)
+    plt.savefig(title + '.png')
+    plt.close()
 
 
 state_values = {}
@@ -108,7 +113,7 @@ state_counts = {}
 
 
 if __name__ == "__main__":
-    count = 500000
+    count = 10000
     usable_episode = {}
     unusable_episode = {}
     for _ in range(count):
@@ -131,6 +136,6 @@ if __name__ == "__main__":
             unusable_episode[k] = float(v)
         print('%s: %f' % (k, float(v)))
     print("state counts: %d" % len(state_values))
-    show_image(usable_episode, False)
-    show_image(unusable_episode, True)
+    show_image(usable_episode, False, 'usable_ace')
+    show_image(unusable_episode, True, 'unusable_ace')
             
