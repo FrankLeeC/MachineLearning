@@ -1,6 +1,10 @@
 # -*- coding:utf-8 -*-
 
 import random
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+import matplotlib.pyplot as plt
+from matplotlib import cm
+import numpy as np
 
 
 cards = ['ace', 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -85,12 +89,28 @@ def generate_episode():
     return states, rewards
 
 
+def show_image(episode, b):
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    x, y, z = list(), list(), list()
+    for k, v in episode.items():
+        xy = k.split('_')
+        x.append(int(xy[0]))
+        y.append(int(xy[1]))
+        z.append(float(v))
+    ax.scatter(x, y, z)
+    ax.set_zlim(-1.01, 1.01)
+    plt.show(block=b)
+
+
 state_values = {}
 state_counts = {}
 
 
 if __name__ == "__main__":
-    count = 5000
+    count = 500000
+    usable_episode = {}
+    unusable_episode = {}
     for _ in range(count):
         states, rewards = generate_episode()
         states = list(reversed(states))
@@ -105,6 +125,12 @@ if __name__ == "__main__":
             state_values[key] = old + (g - old) / (n + 1)
             state_counts[key] = n + 1
     for k, v in state_values.items():
+        if '1' == k.split('_')[2]:
+            usable_episode[k] = float(v)
+        else:
+            unusable_episode[k] = float(v)
         print('%s: %f' % (k, float(v)))
     print("state counts: %d" % len(state_values))
+    show_image(usable_episode, False)
+    show_image(unusable_episode, True)
             
