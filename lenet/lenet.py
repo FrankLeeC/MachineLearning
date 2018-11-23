@@ -15,6 +15,10 @@ def convolute(input, filter):
     return output
 
 
+def relu(input):
+    return np.maximum(0, input)
+
+
 def max_pooling(input, size):
     w, h = np.shape(input)
     w1, h1 = size
