@@ -4,7 +4,9 @@ import numpy as np
 import random
 import time
 
-# returns = np.zeros([10, 10, 2, 2])
+
+# player's sum, dealer showing, usable ace, action
+COUNTS = np.zeros([10, 10, 2, 2])
 Q = np.zeros([10, 10, 2, 2])
 
 # player's sum, dealer showing, usable ace, action
@@ -17,9 +19,9 @@ STICK_ACTION = 0
 HIT_ACTION = 1
 
 
-def random_action():
+def get_action(state):
     random.seed()
-    if random.random() < 0.5:
+    if random.random() < POLICY[state[0]-12, state[1]-2, state[2], STICK_ACTION]:
         return STICK_ACTION
     return HIT_ACTION
 
@@ -34,9 +36,9 @@ def random_state():
     random.seed()
     r = random.randint(0, 199)
     if r < 100:
-        return [r / 10 + 12, (r % 10) + 2, 0]
+        return [int(r / 10) + 12, (r % 10) + 2, 0]
     r -= 100
-    return [r / 10 + 12, (r % 10) + 1, 1]
+    return [int(r / 10) + 12, (r % 10) + 1, 1]
     
 
 def random_card():
@@ -56,16 +58,16 @@ def dealer(showing):
 
 
 def player_action(player_sum, dealer_showing, usable_ace):
-    p = POLICY[player_sum][dealer_showing][usable_ace]
+    p = POLICY[player_sum-12][dealer_showing-2][usable_ace][STICK_ACTION]
     random.seed()
     if random.random() < p:
-        return HIT_ACTION
-    return STICK_ACTION
+        return STICK_ACTION
+    return HIT_ACTION
 
 
 def generate_episode():
     state = random_state()
-    action = random_action()
+    action = get_action(state)
     episodes = list()
     if action == STICK_ACTION:
         dealer_sum = dealer(state[1])
@@ -96,3 +98,33 @@ def generate_episode():
         else:
             episodes.append([next_state, STICK_ACTION, 1])
         return episodes
+
+
+def run():
+    count = 50000
+    for _ in range(count):
+        g = 0.0
+        episodes = generate_episode()
+        print(len(episodes))
+        episodes = reversed(episodes)
+        for episode in episodes:
+            state, action, reward = episode
+            g = 0.9 * g + reward
+            Q[state[0]-12][state[1]-2][state[2]][action] += (g - Q[state[0]-12][state[1]-2][state[2]][action]) / (COUNTS[state[0]-12][state[1]-2][state[2]][action] + 1)
+            COUNTS[state[0]-12][state[1]-2][state[2]][action] += 1
+            if action == HIT_ACTION and Q[state[0]-12][state[1]-2][state[2]][STICK_ACTION] > Q[state[0]-12][state[1]-2][state[2]][action]:
+                POLICY[state[0]-12][state[1]-2][state[2]][STICK_ACTION] = 1.0
+                POLICY[state[0]-12][state[1]-2][state[2]][HIT_ACTION] = 0.0
+            if action == STICK_ACTION and Q[state[0]-12][state[1]-2][state[2]][STICK_ACTION] < Q[state[0]-12][state[1]-2][state[2]][action]:
+                POLICY[state[0]-12][state[1]-2][state[2]][STICK_ACTION] = 0.0
+                POLICY[state[0]-12][state[1]-2][state[2]][HIT_ACTION] = 1.0
+    for player_sum in range(10):
+        for dealer_showing in range(10):
+            for usable_ace in range(2):
+                for action in range(2):
+                    print('player_sum: %d, dealer_showing: %d, usable_ace: %d, action: %d    value: %f' % 
+                    (player_sum+12, dealer_showing+2, usable_ace, action, POLICY[player_sum][dealer_showing][usable_ace][action]))
+
+
+if __name__ == "__main__":
+    run()
