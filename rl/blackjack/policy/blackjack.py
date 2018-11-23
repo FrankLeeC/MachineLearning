@@ -82,7 +82,20 @@ def generate_episode():
         while action == HIT_ACTION:
             # episodes.append([next_state, action, 0])
             card = random_card()
-            new_sum = state[0] + card
+            if card == 1:
+                new_sum = state[0] + 11
+                if new_sum <= 21:
+                    episodes.append([next_state, action, 0])
+                    next_state[2] = 1
+                else:
+                    new_sum -= 10
+                    if new_sum > 21:
+                        episodes.append([next_state, action, -1])
+                        return episodes
+                    else:
+                        episodes.append([next_state, action, 0])
+            else:
+                new_sum = state[0] + card
             if new_sum > 21:
                 episodes.append([next_state, action, -1])
                 return episodes
