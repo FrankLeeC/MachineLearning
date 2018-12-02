@@ -4,26 +4,8 @@ import numpy as np
 import random
 import time
 
-
-# player's sum, dealer showing, usable ace, action
-COUNTS = np.zeros([10, 10, 2, 2])
-Q = np.zeros([10, 10, 2, 2])
-
-# player's sum, dealer showing, usable ace, action
-# usable ace 1
-# unusable ace 0
-# propability of HIT_ACTION
-POLICY = np.zeros([10, 10, 2, 2]) + 0.5  # initial propability       
-
 STICK_ACTION = 0
 HIT_ACTION = 1
-
-
-def get_action(state):
-    random.seed()
-    if random.random() < POLICY[state[0]-12, state[1]-2, state[2], STICK_ACTION]:
-        return STICK_ACTION
-    return HIT_ACTION
 
 
 def random_state():
@@ -57,87 +39,87 @@ def dealer(showing):
     return sum
 
 
-def player_action(player_sum, dealer_showing, usable_ace):
-    p = POLICY[player_sum-12][dealer_showing-2][usable_ace][STICK_ACTION]
-    random.seed()
-    if random.random() < p:
-        return STICK_ACTION
-    return HIT_ACTION
+class Player:
 
+    def __init__(self):
+        self.usable_ace = False
+        self.Q = np.zeros([10, 10, 2, 2])  # player's sum, dealer's sum, usable ace, action 
+        self.COUNT = np.zeros([10, 10, 2, 2])
+        self.current = 0
 
-def generate_episode():
-    state = random_state()
-    action = get_action(state)
-    episodes = list()
-    if action == STICK_ACTION:
-        dealer_sum = dealer(state[1])
-        if state[0] < dealer_sum:
-            return [[state, STICK_ACTION, -1]]
-        elif state[0] == dealer_sum:
-            return [[state, STICK_ACTION, 0]]
+        # 第0表示nousable_ace,第1表示usable_ace
+        # 第0表示STICK_ACTION, 第1表示HIT_ACTION
+        self.POLICY = np.zeros([10, 10, 2, 2]) + 0.5  # initial propability. player's sum, dealer's sum, usable_ace, action   
+
+    def get_action(self, current_sum, dealer_sum):
+        '''
+        current_sum: [12, 21]
+        dealer_sum: [2, 11]
+        STICK_ACTION 0
+        HIT_ACTION 1
+        '''
+        current_sum -= 12
+        dealer_sum -= 2
+        p = self.POLICY[current_sum][dealer_sum]
+        if self.usable_ace:
+            if p[1][0] > p[1][1]:
+                return STICK_ACTION
+            return HIT_ACTION
         else:
-            return [[state, STICK_ACTION, 1]]
-    else:
-        next_state = state
-        while action == HIT_ACTION:
-            # episodes.append([next_state, action, 0])
-            card = random_card()
-            if card == 1:
-                new_sum = state[0] + 11
-                if new_sum <= 21:
-                    episodes.append([next_state, action, 0])
-                    next_state[2] = 1
-                else:
-                    new_sum -= 10
-                    if new_sum > 21:
-                        episodes.append([next_state, action, -1])
-                        return episodes
-                    else:
-                        episodes.append([next_state, action, 0])
-            else:
-                new_sum = state[0] + card
+            if p[0][0] > p[0][1]:
+                return STICK_ACTION
+            return HIT_ACTION
+
+    def hit(self):
+        '''
+        返回是否存活
+        '''
+        card = random_card()
+        if card == 1:
+            new_sum = self.current + 11
             if new_sum > 21:
-                episodes.append([next_state, action, -1])
-                return episodes
+                new_sum -= 10
+                self.current = new_sum
+                return True
             else:
-                episodes.append([next_state, action, 0])
-            next_state = [new_sum, state[1], state[2]]            
-            action = player_action(new_sum, state[1], state[2])
-        dealer_sum = dealer(state[1])
-        if next_state[0] < dealer_sum:
-            episodes.append([next_state, STICK_ACTION, -1])
-        elif next_state[0] == dealer_sum:
-            episodes.append([next_state, STICK_ACTION, 0])
+                self.current = new_sum
+                self.usable_ace = True
+                return True
         else:
-            episodes.append([next_state, STICK_ACTION, 1])
-        return episodes
+            new_sum = self.current + card
+            if new_sum > 21:  # 拿牌后超过了21点
+                if self.usable_ace:  # 如果usable_ace,减去10
+                    self.current -= 10
+                    self.usable_ace = False
+                    self.current = new_sum
+                    return True
+                else:  # 如果nousable_ace,爆了
+                    return False
+            else:  # 拿牌后没有超过21点
+                self.current = new_sum
+                return True
+
+    def count(self, play_sum, dealer_sum, action):
+        if self.usable_ace:
+            self.COUNT[play_sum][dealer_sum][1][action] += 1
+        else:
+            self.COUNT[play_sum][dealer_sum][0][action] += 1
+
+    def q(self, state, action, v):
+        s, d, u = state[0], state[1], state[2]
+        self.Q += (v - self.Q[s][d][u]) / self.COUNT[s][d][u][action]
+
+    def update_policy(self):
+        for s in range(10):
+            for d in range(10):
+                for u in range(2):
+                    stick_value = self.Q[s][d][u][0]
+                    hit_value = self.Q[s][d][u][1]
+                    if stick_value > hit_value:
+                        self.POLICY[s][d][u][0] = 1.0
+                        self.POLICY[s][d][u][1] = 0.0
+                    else:
+                        self.POLICY[s][d][u][1] = 1.0
+                        self.POLICY[s][d][u][0] = 0.0
 
 
-def run():
-    count = 50000
-    for _ in range(count):
-        g = 0.0
-        episodes = generate_episode()
-        print(len(episodes))
-        episodes = reversed(episodes)
-        for episode in episodes:
-            state, action, reward = episode
-            g = 0.9 * g + reward
-            Q[state[0]-12][state[1]-2][state[2]][action] += (g - Q[state[0]-12][state[1]-2][state[2]][action]) / (COUNTS[state[0]-12][state[1]-2][state[2]][action] + 1)
-            COUNTS[state[0]-12][state[1]-2][state[2]][action] += 1
-            if action == HIT_ACTION and Q[state[0]-12][state[1]-2][state[2]][STICK_ACTION] > Q[state[0]-12][state[1]-2][state[2]][action]:
-                POLICY[state[0]-12][state[1]-2][state[2]][STICK_ACTION] = 1.0
-                POLICY[state[0]-12][state[1]-2][state[2]][HIT_ACTION] = 0.0
-            if action == STICK_ACTION and Q[state[0]-12][state[1]-2][state[2]][STICK_ACTION] < Q[state[0]-12][state[1]-2][state[2]][action]:
-                POLICY[state[0]-12][state[1]-2][state[2]][STICK_ACTION] = 0.0
-                POLICY[state[0]-12][state[1]-2][state[2]][HIT_ACTION] = 1.0
-    for player_sum in range(10):
-        for dealer_showing in range(10):
-            for usable_ace in range(2):
-                for action in range(2):
-                    print('player_sum: %d, dealer_showing: %d, usable_ace: %d, action: %d    value: %f' % 
-                    (player_sum+12, dealer_showing+2, usable_ace, action, POLICY[player_sum][dealer_showing][usable_ace][action]))
-
-
-if __name__ == "__main__":
-    run()
