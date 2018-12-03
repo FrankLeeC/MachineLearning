@@ -93,7 +93,7 @@ class Episode:
     def states(self):
         return self.states
 
-   def action(self):
+    def action(self):
        return self.action
 
     def reward(self):
@@ -125,8 +125,8 @@ def generate_eposide():
     episode.add_state(state)
     action = get_action(state)
     episode.add_action(action)
-    # while action != STICK_ACTION:
-        
+    while action != STICK_ACTION:
+        pass
     return episode
 
 def run():
