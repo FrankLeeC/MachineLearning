@@ -125,7 +125,13 @@ def generate_eposide():
     episode.add_state(state)
     action = get_action(state)
     episode.add_action(action)
+    usable_ace = state.usable_ace()
+    next_state = State(state.player_sum(), state.dealer_showing(), state.usable_ace())
     while action != STICK_ACTION:
+        card = random_card()
+        new_sum = next_state.player_sum() + card
+        if new_sum > 21:  # burst
+            pass
         pass
     return episode
 
