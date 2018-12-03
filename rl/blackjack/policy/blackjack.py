@@ -122,29 +122,42 @@ def get_action(state):
 def generate_eposide():
     episode = Episode()
     state = random_start_state()
-    episode.add_state(state)
     action = get_action(state)
-    episode.add_action(action)
-    usable_ace = state.usable_ace()
+    # usable_ace = state.usable_ace()  # 不会改变
     next_state = State(state.player_sum(), state.dealer_showing(), state.usable_ace())
-    while action != STICK_ACTION:
+    while action == HIT_ACTION:
+        episode.add_state(next_state)
+        episode.add_action(action)
         card = random_card()
         new_sum = next_state.player_sum() + card
         if new_sum > 21:  # burst
-            pass
-        pass
+            episode.add_reward(-1)
+            return episode
+        else:
+            episode.add_reward(0)
+        next_state = State(new_sum, next_state.dealer_showing(), next_state.usable_ace())
+        action = get_action(next_state)
+    episode.add_state(next_state)
+    episode.add_action(action)
+    dealer_sum = dealer(state.dealer_showing())
+    if next_state.player_sum() > dealer_sum:
+        episode.add_reward(1)
+    elif next_state.player_sum() < dealer_sum:
+        episode.add_reward(-1)
+    else:
+        episode.add_reward(0)
     return episode
 
 def run():
     count = 1000
     for i in range(count):
         eposide = generate_eposide()
-        states = set()
-        g = 0.0
-        for state in range(eposide):
-            key = '%d_%d_%d' % (state[0], state[1], state[2])
-            if key not in states:  # 当前episode未出现过该状态
-                g = 0.9 * g + state[3]
+        # states = set()
+        # g = 0.0
+        # for state in range(eposide):
+        #     key = '%d_%d_%d' % (state[0], state[1], state[2])
+        #     if key not in states:  # 当前episode未出现过该状态
+        #         g = 0.9 * g + state[3]
 
     pass
 
