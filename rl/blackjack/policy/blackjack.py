@@ -39,17 +39,32 @@ def dealer(showing):
     return sum
 
 
+COUNT = np.zeros([10, 10, 2, 2])
+Q = np.zeros([10, 10, 2, 2])  # player's sum, dealer's sum, usable ace, action 
+
+# 第0表示nousable_ace,第1表示usable_ace
+# 第0表示STICK_ACTION, 第1表示HIT_ACTION
+POLICY = np.zeros([10, 10, 2, 2]) + 0.5  # initial propability. player's sum, dealer's sum, usable_ace, action 
+
 class Player:
 
     def __init__(self):
         self.usable_ace = False
-        self.Q = np.zeros([10, 10, 2, 2])  # player's sum, dealer's sum, usable ace, action 
-        self.COUNT = np.zeros([10, 10, 2, 2])
         self.current = 0
 
-        # 第0表示nousable_ace,第1表示usable_ace
-        # 第0表示STICK_ACTION, 第1表示HIT_ACTION
-        self.POLICY = np.zeros([10, 10, 2, 2]) + 0.5  # initial propability. player's sum, dealer's sum, usable_ace, action   
+    def init(self):
+        self.usable_ace = False
+        self.current = 0
+
+    def random_start():
+        '''
+        随机初始化状态
+        '''
+        player_sum = random.randint(12, 21)
+        dealer_sum = random.randint(2, 11)
+        usable_ace = random.randint(0, 1)
+        self.current = player_sum
+        self.usable_ace = usable_ace
 
     def get_action(self, current_sum, dealer_sum):
         '''
@@ -58,9 +73,10 @@ class Player:
         STICK_ACTION 0
         HIT_ACTION 1
         '''
+        global POLICY, Q, COUNT
         current_sum -= 12
         dealer_sum -= 2
-        p = self.POLICY[current_sum][dealer_sum]
+        p = POLICY[current_sum][dealer_sum]
         if self.usable_ace:
             if p[1][0] > p[1][1]:
                 return STICK_ACTION
@@ -99,27 +115,49 @@ class Player:
                 self.current = new_sum
                 return True
 
-    def count(self, play_sum, dealer_sum, action):
+    def add_count(self, play_sum, dealer_sum, action):
+        global POLICY, Q, COUNT
         if self.usable_ace:
-            self.COUNT[play_sum][dealer_sum][1][action] += 1
+            COUNT[play_sum][dealer_sum][1][action] += 1
         else:
-            self.COUNT[play_sum][dealer_sum][0][action] += 1
+            COUNT[play_sum][dealer_sum][0][action] += 1
 
     def q(self, state, action, v):
+        global POLICY, Q, COUNT
         s, d, u = state[0], state[1], state[2]
-        self.Q += (v - self.Q[s][d][u]) / self.COUNT[s][d][u][action]
+        Q += (v - Q[s][d][u]) / COUNT[s][d][u][action]
 
     def update_policy(self):
+        global POLICY, Q, COUNT
         for s in range(10):
             for d in range(10):
                 for u in range(2):
-                    stick_value = self.Q[s][d][u][0]
-                    hit_value = self.Q[s][d][u][1]
+                    stick_value = Q[s][d][u][0]
+                    hit_value = Q[s][d][u][1]
                     if stick_value > hit_value:
-                        self.POLICY[s][d][u][0] = 1.0
-                        self.POLICY[s][d][u][1] = 0.0
+                        POLICY[s][d][u][0] = 1.0
+                        POLICY[s][d][u][1] = 0.0
                     else:
-                        self.POLICY[s][d][u][1] = 1.0
-                        self.POLICY[s][d][u][0] = 0.0
+                        POLICY[s][d][u][1] = 1.0
+                        POLICY[s][d][u][0] = 0.0
 
 
+def generate_eposide():
+    '''
+    list of state
+    state: [player_sum, dealer_sum, usable_ace, value]
+    '''
+    pass
+
+def run():
+    count = 1000
+    for i in range(count):
+        eposide = generate_eposide()
+        states = set()
+        g = 0.0
+        for state in range(eposide):
+            key = '%d_%d_%d' % (state[0], state[1], state[2])
+            if key not in states:  # 当前episode未出现过该状态
+                g = 0.9 * g + state[3]
+        
+    pass
