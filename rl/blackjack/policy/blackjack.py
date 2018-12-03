@@ -3,9 +3,19 @@
 import numpy as np
 import random
 import time
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 STICK_ACTION = 0
 HIT_ACTION = 1
+
+
+COUNT = np.zeros([10, 10, 2, 2])
+Q = np.zeros([10, 10, 2, 2])  # player's sum, dealer's sum, usable ace, action 
+
+# 第0表示nousable_ace,第1表示usable_ace
+# 第0表示STICK_ACTION, 第1表示HIT_ACTION
+POLICY = np.zeros([10, 10, 2, 2]) + 0.5  # initial propability. player's sum, dealer's sum, usable_ace, action 
 
 
 def random_state():
@@ -20,7 +30,7 @@ def random_state():
     if r < 100:
         return [int(r / 10) + 12, (r % 10) + 2, 0]
     r -= 100
-    return [int(r / 10) + 12, (r % 10) + 1, 1]
+    return [int(r / 10) + 12, (r % 10) + 2, 1]
     
 
 def random_card():
@@ -39,70 +49,62 @@ def dealer(showing):
     return sum
 
 
-COUNT = np.zeros([10, 10, 2, 2])
-Q = np.zeros([10, 10, 2, 2])  # player's sum, dealer's sum, usable ace, action 
-
-# 第0表示nousable_ace,第1表示usable_ace
-# 第0表示STICK_ACTION, 第1表示HIT_ACTION
-POLICY = np.zeros([10, 10, 2, 2]) + 0.5  # initial propability. player's sum, dealer's sum, usable_ace, action 
-
 class State:
 
     def __init__(self, play_sum, dealer_showing, usable_ace):
-        self.player_sum = play_sum
-        self.dealer_showing = dealer_showing
-        self.usable_ace = usable_ace
-        pass
+        self.ps = play_sum
+        self.ds = dealer_showing
+        self.u = usable_ace
     
     def player_sum(self):
         '''
         [12, 21]
         '''
-        return self.play_sum
+        return self.ps
 
     def dealer_showing(self):
         '''
         [2, 11]
         '''
-        return self.dealer_showing
+        return self.ds
 
     def usable_ace(self):
         '''
         0: nousable_ace
         1: usable_ace
         '''
-        return self.usable_ace
+        return self.u
 
 
 class Episode:
 
     def __init__(self):
-        self.states = []
-        self.action = []
-        self.reward = []
+        self.states_list = []
+        self.action_list = []
+        self.reward_list = []
 
     def add_state(self, state):
-        self.states.append(state)
+        self.states_list.append(state)
 
     def add_action(self, action):
-        self.action.append(action)
+        self.action_list.append(action)
 
     def add_reward(self, reward):
-        self.reward.append(reward)
+        self.reward_list.append(reward)
         
     def states(self):
-        return self.states
+        return self.states_list
 
     def action(self):
-       return self.action
+       return self.action_list
 
     def reward(self):
-        return self.reward
+        return self.reward_list
 
 
 def random_start_state():
     player_sum = random.randint(12, 21)
-    dealer_sum = random.randint(2, 11)
+    dealer_showing = random.randint(2, 11)
     usable_ace = random.randint(0, 1)
     return State(player_sum, dealer_showing, usable_ace)
 
@@ -111,6 +113,7 @@ def get_action(state):
     STICK_ACTION 0
     HIT_ACTION   1
     '''
+    global HIT_ACTION, STICK_ACTION
     ps = state.player_sum() - 12
     ds = state.dealer_showing() - 2
     u = state.usable_ace()
@@ -119,7 +122,11 @@ def get_action(state):
         return STICK_ACTION
     return HIT_ACTION
 
-def generate_eposide():
+def generate_episode():
+    '''
+    return episode
+    '''
+    global HIT_ACTION, STICK_ACTION
     episode = Episode()
     state = random_start_state()
     action = get_action(state)
@@ -148,126 +155,96 @@ def generate_eposide():
         episode.add_reward(0)
     return episode
 
+def update_policy(player_sum, dealer_showing, usable_ace):
+    global POLICY, Q
+    ps = player_sum - 12
+    ds = dealer_showing - 2
+    if Q[ps][ds][usable_ace][0] > Q[ps][ds][usable_ace][1]:
+        POLICY[ps][ds][usable_ace][0] = 1.0
+        POLICY[ps][ds][usable_ace][1] = 0.0
+    else:
+        POLICY[ps][ds][usable_ace][1] = 1.0
+        POLICY[ps][ds][usable_ace][0] = 0.0
+
 def run():
-    count = 1000
-    for i in range(count):
-        eposide = generate_eposide()
-        # states = set()
-        # g = 0.0
-        # for state in range(eposide):
-        #     key = '%d_%d_%d' % (state[0], state[1], state[2])
-        #     if key not in states:  # 当前episode未出现过该状态
-        #         g = 0.9 * g + state[3]
-
-    pass
-
-
-
-
-
-
-
-
-
-
-
-
+    global COUNT, Q
+    count = 300000
+    for _ in range(count):
+        episode = generate_episode()
+        l = len(episode.states())
+        g = 0.0
+        states = episode.states()
+        actions = episode.action()
+        rewards = episode.reward()
+        cache = set()
+        for i in range(l):
+            g = 0.9 * g + rewards[i]
+            ps = states[i].player_sum()
+            ds = states[i].dealer_showing()
+            u = states[i].usable_ace()
+            key = '%d_%d_%d' % (ps, ds, u)
+            if key not in cache:
+                cache.add(key)
+                COUNT[ps-12][ds-2][u][actions[i]] += 1
+                Q[ps-12][ds-2][u][actions[i]] += (rewards[i] - Q[ps-12][ds-2][u][actions[i]]) / COUNT[ps-12][ds-2][u][actions[i]]
+                update_policy(ps, ds, u)
 
 
+def show_image(episode, b, title):
+    sns.set()
+    data = np.asarray(np.zeros((22, 12), dtype=float))
+    for e in episode:
+        data[e[0]+12][e[1]+2] = float(e[2])
+    ax = sns.heatmap(data, cmap='YlGnBu')
+    ax.set_xlim(2, 12)
+    ax.set_ylim(12, 22)
+    ax.set_xlabel('dealer showing')
+    ax.set_ylabel('plar sum')
+    ax.set_title(title)
+    plt.savefig(title + '.png')
+    plt.close()
 
 
-class Player:
-
-    def __init__(self):
-        self.usable_ace = False
-        self.current = 0
-
-    def init(self):
-        self.usable_ace = False
-        self.current = 0
-
-    def random_start():
-        '''
-        随机初始化状态
-        '''
-        player_sum = random.randint(12, 21)
-        dealer_sum = random.randint(2, 11)
-        usable_ace = random.randint(0, 1)
-        self.current = player_sum
-        self.usable_ace = usable_ace
-
-    def get_action(self, current_sum, dealer_sum):
-        '''
-        current_sum: [12, 21]
-        dealer_sum: [2, 11]
-        STICK_ACTION 0
-        HIT_ACTION 1
-        '''
-        global POLICY, Q, COUNT
-        current_sum -= 12
-        dealer_sum -= 2
-        p = POLICY[current_sum][dealer_sum]
-        if self.usable_ace:
-            if p[1][0] > p[1][1]:
-                return STICK_ACTION
-            return HIT_ACTION
-        else:
-            if p[0][0] > p[0][1]:
-                return STICK_ACTION
-            return HIT_ACTION
-
-    def hit(self):
-        '''
-        返回是否存活
-        '''
-        card = random_card()
-        if card == 1:
-            new_sum = self.current + 11
-            if new_sum > 21:
-                new_sum -= 10
-                self.current = new_sum
-                return True
+def draw():
+    global POLICY
+    usable_ace_episode = []  # 1
+    nousable_ace_episode = []  # 0
+    for p in range(10):
+        for d in range(10):
+            nousable_action = 0.0
+            # print(POLICY[p][d][0][0] == 1.0)
+            if POLICY[p][d][0][0] == 1.0:  # nousable_ace    stick_action
+                nousable_action = 1.0       # stick
             else:
-                self.current = new_sum
-                self.usable_ace = True
-                return True
-        else:
-            new_sum = self.current + card
-            if new_sum > 21:  # 拿牌后超过了21点
-                if self.usable_ace:  # 如果usable_ace,减去10
-                    self.current -= 10
-                    self.usable_ace = False
-                    self.current = new_sum
-                    return True
-                else:  # 如果nousable_ace,爆了
-                    return False
-            else:  # 拿牌后没有超过21点
-                self.current = new_sum
-                return True
+                nousable_action = 0.0       # hit
+            nousable_ace_episode.append([p, d, int(nousable_action)])
 
-    def add_count(self, play_sum, dealer_sum, action):
-        global POLICY, Q, COUNT
-        if self.usable_ace:
-            COUNT[play_sum][dealer_sum][1][action] += 1
-        else:
-            COUNT[play_sum][dealer_sum][0][action] += 1
+            usable_action = 0.0
+            if POLICY[p][d][1][0] == 1.0:
+                usable_action = 1.0        # stick
+            else:
+                usable_action = 0.0        # hit
+            usable_ace_episode.append([p, d, int(usable_action)])
+    show_image(nousable_ace_episode, False, 'nousable_ace')
+    show_image(usable_ace_episode, True, 'usable_ace')
 
-    def q(self, state, action, v):
-        global POLICY, Q, COUNT
-        s, d, u = state[0], state[1], state[2]
-        Q += (v - Q[s][d][u]) / COUNT[s][d][u][action]
 
-    def update_policy(self):
-        global POLICY, Q, COUNT
-        for s in range(10):
-            for d in range(10):
-                for u in range(2):
-                    stick_value = Q[s][d][u][0]
-                    hit_value = Q[s][d][u][1]
-                    if stick_value > hit_value:
-                        POLICY[s][d][u][0] = 1.0
-                        POLICY[s][d][u][1] = 0.0
-                    else:
-                        POLICY[s][d][u][1] = 1.0
-                        POLICY[s][d][u][0] = 0.0
+def printout():
+    i = 0
+    for p in range(10):
+        for d in range(10):
+            for u in range(2):
+                for a in range(2):
+                    k = '%d_%d_%d_%d' % (p+12, d+2, u, a)
+                    v = POLICY[p][d][u][a]
+                    i += 1
+                    print(k, ' = ', v) 
+                    if i % 2 == 0:
+                        print('-----------------')
 
+if __name__ == "__main__":
+    run()
+    # printout()
+    draw()
+
+    
