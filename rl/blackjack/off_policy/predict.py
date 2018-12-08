@@ -169,7 +169,8 @@ def run(count):
         states = episode.states()
         actions = episode.action()
         rewards = episode.reward()
-        for i in range(l):
+        for j in range(l):
+            i = l - j - 1
             if w == 0.0:
                 break
             g = 0.9 * g + rewards[i]
