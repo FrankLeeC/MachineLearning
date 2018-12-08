@@ -9,14 +9,14 @@ import matplotlib.pyplot as plt
 STICK_ACTION = 0
 HIT_ACTION = 1
 
-Q = np.zeros([10, 10, 2])  # player's sum, dealer's sum, usable ace
-C = np.zeros([10, 10, 2])  # player's sum, dealer's sum, usable ace
+Q = np.zeros([10, 10, 2, 2])  # player's sum, dealer's sum, usable ace, action
+C = np.zeros([10, 10, 2, 2])  # player's sum, dealer's sum, usable ace, action
 
 
 def reset():
     global Q, C
-    Q = np.zeros([10, 10, 2])  # player's sum, dealer's sum, usable ace
-    C = np.zeros([10, 10, 2])  # player's sum, dealer's sum, usable ace
+    Q = np.zeros([10, 10, 2, 2])  # player's sum, dealer's sum, usable ace, action
+    C = np.zeros([10, 10, 2, 2])  # player's sum, dealer's sum, usable ace, action
 
 
 
@@ -178,10 +178,10 @@ def run(count):
             ds = states[i].dealer_showing()
             u = states[i].usable_ace()
             a = actions[i]
-            C[ps-12][ds-2][u] += w
-            Q[ps-12][ds-2][u] += w*(g-Q[ps-12][ds-2][u])/C[ps-12][ds-2][u]
+            C[ps-12][ds-2][u][a] += w
+            Q[ps-12][ds-2][u][a] += w*(g-Q[ps-12][ds-2][u][a])/C[ps-12][ds-2][u][a]
             w *= ratio(states[i], a)
-        returns.append(Q[ps-12][ds-2][u])
+        returns.append(Q[1][0][1][1])
     return returns
 
 
@@ -195,7 +195,7 @@ def show_image(x, y, title):
     plt.close()
 
 if __name__ == "__main__":
-    count = 100
+    count = 200
     episodes = 10000
     qs = np.zeros(episodes)
     for i in range(count):
