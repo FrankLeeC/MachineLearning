@@ -6,32 +6,28 @@ import time
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-STICK_ACTION = 0
-HIT_ACTION = 1
+HIT_ACTION = 0
+STICK_ACTION = 1
 
 Q = np.zeros([10, 10, 2, 2])  # player's sum, dealer's sum, usable ace, action
 C = np.zeros([10, 10, 2, 2])  # player's sum, dealer's sum, usable ace, action
 POLICY = np.zeros([10, 10, 2])  # player's sum, dealer's sum, usable ace
-
-
-def init_policy():
-    global POLICY
-    for ps in range(10):
-        for ds in range(10):
-            for u in range(2):
-                p = Q[ps][ds][u]
-                if p[0] >= p[1]:
-                    POLICY[ps][ds][u] = STICK_ACTION
-                else:
-                    POLICY[ps][ds][u] = HIT_ACTION
+for ps in range(10):
+    for ds in range(10):
+        for u in range(2):
+            p = Q[ps][ds][u]
+            if p[0] >= p[1]:
+                POLICY[ps][ds][u] = HIT_ACTION
+            else:
+                POLICY[ps][ds][u] = STICK_ACTION
 
 
 def behavior_policy():
     random.seed()
     r = random.random()
     if r < 0.5:
-        return STICK_ACTION
-    return HIT_ACTION
+        return HIT_ACTION
+    return STICK_ACTION
 
 
 def target_policy(play_sum):
@@ -162,13 +158,6 @@ def generate_episode():
     return episode
 
 
-def ratio(state, action):
-    ta = target_policy(state.player_sum())
-    if ta == action:
-        return 1 / 0.5
-    return 0
-
-
 def run(count):
     global Q, C, POLICY
     for _ in range(count):
@@ -190,9 +179,9 @@ def run(count):
             Q[ps-12][ds-2][u][a] += w*(g-Q[ps-12][ds-2][u][a])/C[ps-12][ds-2][u][a]
             p = Q[ps-12][ds-2][u]
             if p[0] >= p[1]:
-                POLICY[ps-12][ds-2][u] = STICK_ACTION
-            else:
                 POLICY[ps-12][ds-2][u] = HIT_ACTION
+            else:
+                POLICY[ps-12][ds-2][u] = STICK_ACTION
             if a == POLICY[ps-12][ds-2][u]:
                 w *= 1/0.5
             else:
@@ -213,17 +202,18 @@ def show_image(episode, title):
     plt.savefig(title + '.png')
     plt.close()
 
+
 if __name__ == "__main__":
-    init_policy()
     episodes = 10000
     run(episodes)
     usable_list, unusable_list = [], []
     for ps in range(10):
         for ds in range(10):
-            usable_list.append([ps, ds, POLICY[ps][ds][0][0]])  # 获取 STICK_ACTION 的值即可
-            unusable_list.append([ps, ds, POLICY[ps][ds][1][0]])
+            usable_list.append([ps, ds, POLICY[ps][ds][0]])
+            unusable_list.append([ps, ds, POLICY[ps][ds][1]])
     show_image(usable_list, 'usable_ace')
     show_image(unusable_list, 'unusable_ace')
+
 
 
     
