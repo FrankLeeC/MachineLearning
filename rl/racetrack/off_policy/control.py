@@ -217,6 +217,9 @@ def print_out():
         for y in range(17):
             for v in range(5):
                 for h in range(5):
+                    state = State([x, y], [0, ])
+                    if is_forbidden(state):
+                        continue
                     a = POLICY[y][x][v][h]
                     s = '%d_%d   %d_%d : %s\n' % (x, y, v, h, str_action(a))
                     f.write(s)
