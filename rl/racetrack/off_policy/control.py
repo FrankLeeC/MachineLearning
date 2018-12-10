@@ -20,12 +20,13 @@ velocity(index):
 1(0), 2(1), 3(2), 4(3)
 '''
 
-Q = np.zeros([17, 32, 5, 5, 9])  # 17*32 表示位置  4*4表示当前速度  9表示动作
-C = np.zeros([17, 32, 5, 5, 9])  # 17*32 表示位置  4*4表示当前速度  9表示动作
+Q = np.random.randn(17, 32, 5, 5, 9)  # 17*32 表示位置  4*4表示当前速度  9表示动作
+C = np.random.randn(17, 32, 5, 5, 9)  # 17*32 表示位置  4*4表示当前速度  9表示动作
 POLICY = np.zeros([17, 32, 5, 5])
 
 
 def init_policy():
+    global POLICY, Q
     for x in range(17):
         for y in range(32):
             for v in range(5):
@@ -160,9 +161,10 @@ def generate_episode():
 
 
 def run(counts):
-    global POLICY
+    global POLICY, Q, C
     init_policy()
     for i in range(counts):
+        print(np.sum(Q))
         episode = generate_episode()
         if (i+1) % 100 == 0:
             print('=============================', i+1)
@@ -191,44 +193,48 @@ def run(counts):
             w *= 9
 
 
-def str_action(a):
+def decouple_action(a):
     h = (a % 3) - 1
     v = (a - h - 1) / 3 - 1
-    vs = ''
-    hs = ''
-    if v > 0:
-        vs = '⬆️'
-    elif v == 0:
-        vs = '-'
-    else:
-        vs = '⬇️'
-    if h > 0:
-        hs = '➡️'
-    elif h == 0:
-        hs = '|'
-    else:
-        hs = '⬅️'
-    return vs + ' ' + hs
-    
-    
+    return v, h
+
+
+def act_str(action, direction):
+    if direction == 'vertical':
+        if action > 0:
+            return '⬆️'
+        if action == 0:
+            return '|'
+        return '⬇️'
+    if direction == 'horizontal':
+        if action > 0:
+            return '➡️'
+        if action == 0:
+            return '|'
+        return '⬅️' 
 
 
 def print_out():
+    global POLICY
     f = open('./policy.txt', mode='w', encoding='utf-8')
     for x in range(32):
         for y in range(17):
             for v in range(5):
                 for h in range(5):
-                    state = State([x, y], [0, ])
+                    state = State([x, y], [0, 0])
                     if is_forbidden(state):
                         continue
                     a = POLICY[y][x][v][h]
-                    s = '%d_%d   %d_%d : %s\n' % (x, y, v, h, str_action(a))
+                    vv, hv = decouple_action(a)
+                    vs, hs = act_str(vv, 'vertical'), act_str(hv, 'horizontal')
+                    nv, nh = v + vv, h + hv
+                    nx, ny = x - nv, y + nh
+                    s = '%d_%d   %d_%d --> %s %s -->  %d_%d  %d_%d\n' % (x, y, v, h, vs, hs, nx, ny, nv, nh)
                     f.write(s)
                     f.flush()
     f.close()
 
 
 if __name__ == "__main__":
-    run(10000)
+    run(300)
     print_out()
