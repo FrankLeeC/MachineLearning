@@ -160,6 +160,7 @@ def generate_episode():
 
 
 def run(counts):
+    global POLICY
     init_policy()
     for i in range(counts):
         episode = generate_episode()
@@ -184,6 +185,7 @@ def run(counts):
             C[x][y][vv][hv][a] += w
             Q[x][y][vv][hv][a] += w * (g - Q[x][y][vv][hv][a]) / C[x][y][vv][hv][a]
             idx = np.argmax(Q[x][y][vv][hv])
+            POLICY[x][y][vv][hv] = idx
             if idx != a:
                 break
             w *= 9
