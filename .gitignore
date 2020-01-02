@@ -13,3 +13,4 @@ svm_example/
 __pycache__
 test/*
 
+*.DS_Store
