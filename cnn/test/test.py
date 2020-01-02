@@ -17,6 +17,11 @@ def image():
     img = np.array(Image.open('/Users/frank/Pictures/sinnosuke.jpeg'))
     print(img.shape)
 
+def list_join():
+    l = [[i+2 for i in range(j)] for j in range(10)]
+    print(l)
+
 if __name__ == "__main__":
     # convolute()
-    image()
+    # image()
+    list_join()
