@@ -2,30 +2,36 @@
 
 import numpy as np
 
+
+# PADDING MODE
+PADDING_SAME = 0  # 与输出一致
+PADDING_VALID = 1  # 不做对齐补充  会有损失
+
+# POOLING MODE
+POOLING_MAX = 0  # 最大
+POOLING_AVG = 1  # 平均
+POOLING_ECHO = 2  # 原样返回
+
 # 2维卷积
 # matrix的层数与filters层数一致
 # matrix  单个正方形图层通道
 # filters 过滤器集合  可以多个过滤器
+# stride filter 移动步长
+# padding 对齐方式
 # 返回与过滤器个数相同的卷积层
-def convolute2d(matrix, filters):
+def convolute2d(matrix, filters, stride, padding=PADDING_SAME):
+    fsize, _ = filters[0].shape
+    matrix, rounds = __padding(matrix, fsize, stride, padding)
     result = []
     for _, f in enumerate(filters):
         f_width, _ = f.shape
-        m_width, _ = matrix.shape
-        rounds = m_width - f_width + 1
-        d = [[__conv2d(matrix[r:r+f_width,c:c+f_width], f) for c in range(rounds)] for r in range(rounds)]
+        matrix.shape
+        d = [[__conv2d(matrix[r*stride:r*stride+f_width,c*stride:c*stride+f_width], f) for c in range(rounds)] for r in range(rounds)]
         result.append(d)
     return np.array(result)
 
 def __conv2d(m, f):
     return np.sum(m*f)
-
-PADDING_SAME = 0
-PADDING_VALID = 1
-
-POOLING_MAX = 0
-POOLING_AVG = 1
-POOLING_ECHO = 2
 
 # round = [(n+2*p-f)//s]+1  round == out_width
 # PADDING_SAME    round = out_width = n  p = [s*(n-1)+f-n]/2

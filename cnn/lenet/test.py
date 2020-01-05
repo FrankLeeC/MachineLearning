@@ -12,9 +12,9 @@ def test_conv():
     print('---------')
     print(f)
     print('----------------')
-    c = model.convolute2d(a, f)
-    print(c.shape)  # (3, 4, 4)
-    print(c[0])
+    c = model.convolute2d(a, f, 2, padding=model.PADDING_SAME)
+    print(c.shape)
+    print(c)
 
 def test_pooling():
     a = np.array([[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3], [4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]])
@@ -26,5 +26,5 @@ if __name__ == "__main__":
     # convolute()
     # image()
     # list_join()
-    # test_conv()
-    test_pooling()
+    test_conv()
+    # test_pooling()
