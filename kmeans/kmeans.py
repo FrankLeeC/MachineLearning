@@ -1,7 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import win_unicode_console
-win_unicode_console.enable()
 
 
 

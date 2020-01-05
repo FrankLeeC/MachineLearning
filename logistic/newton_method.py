@@ -37,7 +37,7 @@ def read(path='./data1.txt'):
 def train():
     global x, y
     theta = np.zeros((3, 1))
-    for i in range(200):
+    for _ in range(200):
         loss = y - sigmoid_matrix(x, theta)
         direv = np.matrix(x).transpose() * loss
         h = np.matrix(x.transpose() * x * (sigmoid_matrix(x, theta).transpose() * (1 - sigmoid_matrix(x, theta)))[0, 0]).I
