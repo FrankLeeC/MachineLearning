@@ -6,10 +6,10 @@ import os
 path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(path)
 
-import lib.layer as layer
-import lib.loss as loss
-import lib.network as network
-import lib.optimizer as optimizer
+import pynet.layer as layer
+import pynet.loss as loss
+import pynet.network as network
+import pynet.optimizer as optimizer
 
 
 
