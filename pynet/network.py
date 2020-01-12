@@ -12,7 +12,7 @@ class NetWork:
         self.layer_count = 0  # 总层数
 
     def __init_log(self):
-        self.logger = logging.getLogger('Neural NetWork')
+        self.logger = logging.getLogger('log[' + self.name + ']')
         self.log_formatter = logging.Formatter('%(asctime)s %(levelname)-8s: %(message)s')
         log_handler = logging.StreamHandler(sys.stdout)
         log_handler.setFormatter(self.log_formatter)
