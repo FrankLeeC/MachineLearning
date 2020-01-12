@@ -1,5 +1,7 @@
 # -*- coding:utf-8 -*-
 import numpy as np
+import logging
+import sys
  
 class NetWork:
 
@@ -8,6 +10,15 @@ class NetWork:
         self.layers = []
         self.dense_layers = []  # 哪几层是Dense层
         self.layer_count = 0  # 总层数
+
+    def __init_log(self):
+        self.logger = logging.getLogger('Neural NetWork')
+        self.log_formatter = logging.Formatter('%(asctime)s %(levelname)-8s: %(message)s')
+        log_handler = logging.StreamHandler(sys.stdout)
+        log_handler.setFormatter(self.log_formatter)
+        self.logger.addHandler(log_handler)
+        self.logger.setLevel(logging.INFO)
+        
 
     def add(self, layer):
         if not layer.__is_activation():
@@ -26,6 +37,13 @@ class NetWork:
     def optimizer(self, opt):
         self.optimizer_function = opt
 
+    def add_logger_handler(self, log_handler):
+        log_handler.setFormatter(self.log_formatter)
+        self.logger.addHandler(log_handler)
+
+    def __output(self, s):
+        self.logger.info(s)
+        
     # iteration 全数据量的训练次数
     # batch_size 每个 epoch 数据量
     # 所有 epoch 训练一次 算 一次 iteration
@@ -56,6 +74,8 @@ class NetWork:
             p = self.__forward(e)
             self.__calculate_loss(l, p)
             self.__backprocess()
+
+        self.__output('loss: ' + self.__loss())
         
         # 计算平均误差
         for i in range(len(self.layers)):
@@ -92,15 +112,14 @@ class NetWork:
         for i in range(len(self.layers)):
             j = len(self.layers)-i-1
             if self.layers[j].__is_activation():
-                if i == 0:
-                    next_weight = np.ones(1)
-                else:
-                    next_weight = self.layers[j+1]
-                der_error = self.layers[j].__derivate(np.dot(der_error, next_weight.T))
+                der_error = self.layers[j].__derivate(der_error)
             else:
                 a, b = self.layers[j].__derivate(der_error)
                 self.error_weight[j] += a
                 self.error_bias[j] += b
+                if j > 0:
+                    der_error = np.dot(der_error, self.layers[j].__weight().T)
+                
 
     # x array
     def predict(self, x):
