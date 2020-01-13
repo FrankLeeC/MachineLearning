@@ -42,7 +42,7 @@ class NetWork:
         self.logger.addHandler(log_handler)
 
     def __output(self, s):
-        self.logger.info(s)
+        self.logger.info('['+self.name+']'+s)
         
     # iteration 全数据量的训练次数
     # batch_size 每个 epoch 数据量
