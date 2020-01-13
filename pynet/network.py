@@ -2,14 +2,15 @@
 import numpy as np
 import logging
 import sys
+import copy
  
 class NetWork:
 
     def __init__(self, name):
         self.name = name
-        self.layers = []
-        self.dense_layers = []  # 哪几层是Dense层
-        self.layer_count = 0  # 总层数
+        self.neurals = []
+        self.last_in_dim = None
+        self.__init_log()
 
     def __init_log(self):
         self.logger = logging.getLogger('log[' + self.name + ']')
@@ -20,16 +21,12 @@ class NetWork:
         self.logger.setLevel(logging.INFO)
         
 
-    def add(self, layer):
-        if not layer.__is_activation():
-            self.last_in_dim = layer.output_dim()
-            if not layer.input_dim():
-                layer.set_input_dim(self.last_in_dim)
-        else:
-            self.dense_layers.append(self.layer_count)
-        layer.set_index(self.layer_count)
-        self.layer_count += 1
-        self.layers.append(layer)
+    def add(self, neural):
+        if (not neural.is_activation()) and (neural.input_dim() is None):
+            neural.set_input_dim(self.last_in_dim)
+        if not neural.is_activation():  # dense
+            self.last_in_dim = neural.output_dim()
+        self.neurals.append(neural)
 
     def loss(self, f):
         self.loss_function = f
@@ -42,14 +39,20 @@ class NetWork:
         self.logger.addHandler(log_handler)
 
     def __output(self, s):
-        self.logger.info('['+self.name+']'+s)
+        self.logger.info('['+self.name+'] '+s)
+
+    def __init_optimizer(self):
+        for l in self.neurals:
+            if not l.is_activation():
+                l.set_optimizer(copy.deepcopy(self.optimizer_function), copy.deepcopy(self.optimizer_function))
         
     # iteration 全数据量的训练次数
     # batch_size 每个 epoch 数据量
     # 所有 epoch 训练一次 算 一次 iteration
     def train(self, x, y, batch_size, iteration=1000):
+        self.__init_optimizer()
         self.batch_size = batch_size
-        epochs = len(y) / batch_size
+        epochs = int(len(y) / batch_size)
         if len(y) % batch_size != 0:
             epochs += 1
         for _ in range(iteration):
@@ -64,37 +67,42 @@ class NetWork:
         self.error_weight, self.error_bias = [], []
 
         # init
-        for l in range(self.layers):
-            a, b = l.__input_dim(), l.__output_dim()
+        for l in self.neurals:
+            a, b = 0, 0
+            if not l.is_activation():
+                a, b = l.input_dim(), l.output_dim()
             self.error_weight.append(np.zeros([a, b]))
-            self.error_bias.append(np.zeros(b))
+            self.error_bias.append(np.zeros([1,b]))
 
         # 计算样本
-        for e, l in range(zip(x, y)):
+        for e, l in zip(x, y):
             p = self.__forward(e)
             self.__calculate_loss(l, p)
             self.__backprocess()
 
-        self.__output('loss: ' + self.__loss())
+
+        self.__output('loss: ' + str(self.__loss()))
         
         # 计算平均误差
-        for i in range(len(self.layers)):
-            self.error_weight[i]/self.batch_size
-            self.error_bias[i]/self.batch_size
+        for i in range(len(self.neurals)):
+            if not self.neurals[i].is_activation():
+                self.error_weight[i]/self.batch_size
+                self.error_bias[i]/self.batch_size
 
         # 更新
-        for i, l in enumerate(self.layers):
-            if not l.__is_activation():
-                ew , eb = self.optimizer_function(self.error_weight[i]), self.optimizer_function(self.error_bias[i])
-                l.__update(ew, eb)
+        for i, l in enumerate(self.neurals):
+            if not l.is_activation():
+                ew , eb = l.weight_optimizer().grad(self.error_weight[i]), l.bias_optimizer().grad(self.error_bias[i])
+                l.update(ew, eb)
 
         
 
     # 每计算一个样本，执行一次
     def __forward(self, x):
         p = x
-        for _, l in enumerate(self.layers):
-            p = l.__calculate(p)
+        for _, l in enumerate(self.neurals):
+            l.calculate(p)
+            p = l.output()
         return p
 
     def __calculate_loss(self, y, py):
@@ -109,16 +117,16 @@ class NetWork:
     # 每计算一个样本，执行一次
     def __backprocess(self):
         der_error = self.__error()
-        for i in range(len(self.layers)):
-            j = len(self.layers)-i-1
-            if self.layers[j].__is_activation():
-                der_error = self.layers[j].__derivate(der_error)
+        for i in range(len(self.neurals)):
+            j = len(self.neurals)-i-1
+            if self.neurals[j].is_activation():
+                der_error = self.neurals[j].derivate(der_error)
             else:
-                a, b = self.layers[j].__derivate(der_error)
-                self.error_weight[j] += a
-                self.error_bias[j] += b
+                a, b = self.neurals[j].derivate(der_error)
+                self.error_weight[j] += np.reshape(a, self.error_weight[j].shape)
+                self.error_bias[j] += np.reshape(b, self.error_bias[j].shape)
                 if j > 0:
-                    der_error = np.dot(der_error, self.layers[j].__weight().T)
+                    der_error = np.dot(der_error, self.neurals[j].weight().T)
                 
 
     # x array
