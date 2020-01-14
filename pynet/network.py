@@ -93,7 +93,11 @@ class NetWork:
         for i, l in enumerate(self.neurals):
             if not l.is_activation():
                 ew , eb = l.weight_optimizer().grad(self.error_weight[i]), l.bias_optimizer().grad(self.error_bias[i])
+                # print(np.sum(ew))
+                ew = np.clip(ew, -1.0, 1.0)
+                eb = np.clip(eb, -1.0, 1.0)
                 l.update(ew, eb)
+            # print('----------')
 
         
 
@@ -131,4 +135,10 @@ class NetWork:
 
     # x array
     def predict(self, x):
-        return [self.__forward(a) for a in x]
+        r = []
+        for a in x:
+            y = self.__forward(a)
+            print(y)
+            r.append(y)
+        return np.array(r)
+        # return [np.reshape(self.__forward(a), 1) for a in x]

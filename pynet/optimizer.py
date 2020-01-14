@@ -4,7 +4,7 @@ import numpy as np
 
 class Adagrad:
 
-    def __init__(self, learning_rate=0.08, epsilon=0.00001):
+    def __init__(self, learning_rate=0.01, epsilon=0.00001):
         self.learning_rate = learning_rate
         self.epsilon = epsilon
         self.prev_n = None

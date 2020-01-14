@@ -32,10 +32,10 @@ def load_test_set():
 
 def get_network():
     n = network.NetWork('network')
-    n.add(neural.Dense(1024, input_dim=784))
-    n.add(neural.Relu(0.0))
-    n.add(neural.Dense(512))
-    n.add(neural.Relu(0.0))
+    n.add(neural.Dense(512, input_dim=784))
+    n.add(neural.Relu(0.2))
+    n.add(neural.Dense(256))
+    n.add(neural.Relu(0.2))
     n.add(neural.Dense(1))
     n.add(neural.Sigmoid())
     n.loss(loss.BinaryCrossEntropy())
@@ -43,14 +43,28 @@ def get_network():
     return n
 
 def run():
+    count = 10
     x, y = load_training_set()
-    x, y = x[0:1], y[0:1]
+    a = x[0:count]
+    a.extend(x[-count:-1])
+    b = y[0:count]
+    b.extend(y[-count:-1])
     n = get_network()
-    n.train(x, y, 1, iteration=5000)
+    n.train(a, b, count, iteration=10)
+    count = 10
     x, y = load_test_set()
-    x, y = x[0:1], y[0:1]
-    y1 = n.predict(x)
-    print(y*np.log(y1))
+    a = x[0:count]
+    a.extend(x[-count:-1])
+    b = y[0:count]
+    b.extend(y[-count:-1])
+    y1 = n.predict(a)
+    b = np.reshape(b, (1, count*2-1))
+    y1 = np.reshape(y1, (1, count*2-1))
+    # print(b)
+    # print(y1)
+    # print('-----------------')
+    # print(np.sum((b-y1)**2))
     
 if __name__ == "__main__":
     run()
+    # print(np.log(0.000001), np.log(1.000001))
