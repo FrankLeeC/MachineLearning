@@ -11,6 +11,7 @@ class NetWork:
         self.neurals = []
         self.last_in_dim = None
         self.__init_log()
+        self.init_opt = False
 
     def __init_log(self):
         self.logger = logging.getLogger('log[' + self.name + ']')
@@ -50,7 +51,9 @@ class NetWork:
     # batch_size 每个 epoch 数据量
     # 所有 epoch 训练一次 算 一次 iteration
     def train(self, x, y, batch_size, iteration=1000):
-        self.__init_optimizer()
+        if not self.init_opt:
+            self.init_opt = True
+            self.__init_optimizer()
         self.batch_size = batch_size
         epochs = int(len(y) / batch_size)
         if len(y) % batch_size != 0:
