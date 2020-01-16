@@ -15,7 +15,7 @@ class NetWork:
 
     def __init_log(self):
         self.logger = logging.getLogger('log[' + self.name + ']')
-        self.log_formatter = logging.Formatter('%(asctime)s %(levelname)-8s: %(message)s')
+        self.log_formatter = logging.Formatter('%(asctime)s %(levelname)-5s: %(message)s')
         log_handler = logging.StreamHandler(sys.stdout)
         log_handler.setFormatter(self.log_formatter)
         self.logger.addHandler(log_handler)
@@ -64,6 +64,7 @@ class NetWork:
                 end = (e+1) * batch_size
                 train_x, train_y = x[start:end], y[start:end]
                 self.__batch(train_x, train_y)
+            self.__output('loss: ' + str(self.__loss()))
         
     
     def __batch(self, x, y):
@@ -82,9 +83,6 @@ class NetWork:
             p = self.__forward(e)
             self.__calculate_loss(l, p)
             self.__backprocess()
-
-
-        self.__output('loss: ' + str(self.__loss()))
         
         # 计算平均误差
         for i in range(len(self.neurals)):
@@ -141,7 +139,6 @@ class NetWork:
         r = []
         for a in x:
             y = self.__forward(a)
-            print(y)
             r.append(y)
         return np.array(r)
         # return [np.reshape(self.__forward(a), 1) for a in x]

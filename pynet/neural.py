@@ -14,7 +14,7 @@ class Dense:
         self.in_dim = None
         if args and args['input_dim']:
             self.in_dim = args['input_dim']
-            self.w = np.random.randn(self.in_dim, self.out_dim)
+            self.w = np.random.randn(self.in_dim, self.out_dim) - 0.5
         self.b = np.random.randn(1, self.out_dim)
         self.w_optimizer, self.b_optimizer = None, None
 
@@ -23,7 +23,7 @@ class Dense:
 
     def set_input_dim(self, input_dim):
         self.in_dim = input_dim
-        self.w = np.random.randn(self.in_dim, self.out_dim)
+        self.w = np.random.randn(self.in_dim, self.out_dim) - 0.5
 
     def input_dim(self):
         return self.in_dim
@@ -161,3 +161,31 @@ class Dropout:
         self.ex = e * (self.r / self.retain_prob)
         return self.ex
 
+
+# -------------------------------- softmax --------------------------------
+
+class Softmax:
+
+    def __init__(self):
+        pass
+
+    def is_activation(self):
+        return True
+
+    def calculate(self, x):
+        m = np.max(x)
+        s = np.exp(x-m)
+        self.y = s/np.sum(s)
+
+    def output(self):
+        return self.y
+    
+    def derivate(self, e):
+        ex = np.ones_like(self.y)
+        for i in range(len(self.y[0])):
+            a=np.ones_like(self.y) * -self.y[0][i]
+            a *= self.y
+            a[0][i] += self.y[0][i]
+            ex[0][i] *= np.sum(e*a)
+        self.ex = ex
+        return self.ex
