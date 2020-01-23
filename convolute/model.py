@@ -75,16 +75,3 @@ def __padding(data, fsize, stride, padding=PADDING_SAME):
     result = np.zeros([pad_left + n + pad_right, pad_left + n + pad_right])
     result[pad_left:pad_left+n,pad_left:pad_left+n] = data
     return result, n
-
-def sigmoid(x):
-    return 1/(1+np.exp(-x))
-
-def relu(x):
-    if x > 0:
-        return x
-    return 0
-
-def softmax(a):
-    m = np.max(a)
-    s = np.sum(np.exp(a - m))
-    return np.exp(a - m) / s

@@ -25,7 +25,7 @@ class NetWork:
     def add(self, neural):
         if (not neural.is_activation()) and (neural.input_dim() is None):
             neural.set_input_dim(self.last_in_dim)
-        if not neural.is_activation():  # dense
+        if not neural.is_activation():
             self.last_in_dim = neural.output_dim()
         self.neurals.append(neural)
 
