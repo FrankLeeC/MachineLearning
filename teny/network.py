@@ -12,6 +12,7 @@ class NetWork:
         self.last_in_dim = None
         self.__init_log()
         self.init_opt = False
+        self.neural_count = 0
 
     def __init_log(self):
         self.logger = logging.getLogger('log[' + self.name + ']')
@@ -27,6 +28,8 @@ class NetWork:
             neural.set_input_dim(self.last_in_dim)
         if not neural.is_activation():
             self.last_in_dim = neural.output_dim()
+        neural.set_index(self.neural_count)
+        self.neural_count += 1
         self.neurals.append(neural)
 
     def loss(self, f):
@@ -72,11 +75,7 @@ class NetWork:
 
         # init
         for l in self.neurals:
-            a, b = 0, 0
-            if not l.is_activation():
-                a, b = l.input_dim(), l.output_dim()
-            self.error_weight.append(np.zeros([a, b]))
-            self.error_bias.append(np.zeros([1,b]))
+            l.clear_error_weight()
 
         # 计算样本
         for e, l in zip(x, y):
@@ -85,15 +84,14 @@ class NetWork:
             self.__backprocess()
         
         # 计算平均误差
-        for i in range(len(self.neurals)):
-            if not self.neurals[i].is_activation():
-                self.error_weight[i]/self.batch_size
-                self.error_bias[i]/self.batch_size
+        for l in self.neurals:
+            if not l.is_activation():
+                l.avg_error()
 
         # 更新
-        for i, l in enumerate(self.neurals):
+        for l in self.neurals:
             if not l.is_activation():
-                ew , eb = l.weight_optimizer().grad(self.error_weight[i]), l.bias_optimizer().grad(self.error_bias[i])
+                ew, eb = l.grad()
                 ew = np.clip(ew, -1.0, 1.0)
                 eb = np.clip(eb, -1.0, 1.0)
                 l.update(ew, eb)
@@ -122,15 +120,8 @@ class NetWork:
         der_error = self.__error()
         for i in range(len(self.neurals)):
             j = len(self.neurals)-i-1
-            if self.neurals[j].is_activation():
-                der_error = self.neurals[j].derivate(der_error)
-            else:
-                a, b = self.neurals[j].derivate(der_error)
-                self.error_weight[j] += np.reshape(a, self.error_weight[j].shape)
-                self.error_bias[j] += np.reshape(b, self.error_bias[j].shape)
-                if j > 0:
-                    der_error = np.dot(der_error, self.neurals[j].weight().T)
-                
+            der_error = self.neurals[j].derivate(der_error)
+
 
     # x array
     def predict(self, x):
