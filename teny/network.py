@@ -92,8 +92,8 @@ class NetWork:
         for l in self.neurals:
             if not l.is_activation():
                 ew, eb = l.grad()
-                ew = np.clip(ew, -1.0, 1.0)
-                eb = np.clip(eb, -1.0, 1.0)
+                # ew = np.clip(ew, -1.0, 1.0)
+                # eb = np.clip(eb, -1.0, 1.0)
                 l.update(ew, eb)
 
         
