@@ -149,11 +149,9 @@ def __padding(data, fsize, stride, padding=PADDING_SAME):
 
     result:
     padding data
-    width stride rounds
-    height stride rounds
     '''
     if padding == PADDING_VALID:
-        return data, int((data.shape[2]-fsize[0])/stride[0])+1, int((data.shape[1]-fsize[1])/stride[1])+1
+        return data
     elif padding != PADDING_SAME:
         raise Exception('invalid padding in __padding ', padding, ' must be PADDING_SAME(int 0) or PADDING_VALID(int 1)')
     shape = []
@@ -182,7 +180,7 @@ def __padding(data, fsize, stride, padding=PADDING_SAME):
     else:
         result = np.zeros([channel, pad_left + width + pad_right, pad_up + height + pad_down])
         result[0:channel, pad_left:pad_left+width, pad_up:pad_up+height] = data
-    return np.array(result), width, height # int((a+width-fsize[0])/stride[0])+1, int((b+height-fsize[1])/stride[1])+1
+    return np.array(result)
 
 
 class Conv:
@@ -300,7 +298,18 @@ class Conv:
         self.y = np.array(y).reshape(self.out_dim())
 
     def convolute(self, x, y, bias, fsize, strides, padding):
-        matrix, width_rounds, height_rounds = __padding(x, fsize, strides, padding)
+        matrix = __padding(x, fsize, strides, padding)
+        width_rounds, height_rounds = 0, 0
+        if padding == PADDING_SAME:
+            if len(x.shape) == 2:
+                width_rounds, height_rounds = x.shape[1], x.shape[0]  # 循环轮次
+            if len(x.shape) == 3:
+                width_rounds, height_rounds = x.shape[2], x.shape[1]
+        else:  # valid
+            if len(x.shape) == 2:
+                width_rounds, height_rounds = int((x.shape[1]-fsize[0])/stride[0])+1, int((x.shape[0]-fsize[1])/stride[1])+1
+            if len(x.shape) == 3:
+                width_rounds, height_rounds = int((x.shape[2]-fsize[0])/stride[0])+1, int((x.shape[1]-fsize[1])/stride[1])+1
         self.input_matrix = matrix
         self.matrix_width_rounds = width_rounds
         self.matrix_height_rounds = height_rounds
@@ -331,7 +340,7 @@ class Conv:
         return
             error
         '''
-        self.d_filter = [np.zeros_like(self.channel, self.size[0], self.size[1]) for _ in range(self.count)]
+        self.d_filter = [np.zeros(self.channel, self.size[0], self.size[1]) for _ in range(self.count)]
         self.d_bias = [0 for i in range(self.count)]
         for i, e in enumerate(error): # count    each filter
             fe = []
@@ -353,22 +362,20 @@ class Conv:
         初始化/清空误差
         在每个batch前调用
         '''
-        raise Exception('no implementation')
-        a, b = self.input_dim(), self.output_dim()
-        self.error_weight = np.zeros([a, b])
-        self.error_bias = np.zeros([1, b])
+        self.error_weight = [np.zeros(self.channel, self.size[0], self.size[1]) for _ in range(self.count)]
+        self.error_bias = [0 for i in range(self.count)]
         self.batch_size = 0
 
     # errors 数组
     def add_error(self, *errors):
         '''
         累计每个样本的误差
-        errors: matrix or list of matrix
+        errors: error or list or errors
         '''
-        raise Exception('no implementation')
         a, b = errors
-        # self.error_weight += np.reshape(a, self.error_weight.shape)
-        # self.error_bias += np.reshape(b, self.error_bias.shape)
+        for i in range(len(a)):
+            self.error_weight[i] += a[i]
+            self.error_bias[i] += b[i]
         self.batch_size += 1
 
     def error_for_last_layer(self, der_error):
@@ -604,16 +611,43 @@ def test_padding():
     print(r)
     print(a, b)
 
-print('np.eye(5)[1]: ', np.eye(5)[1])
-a = np.array([[1, 2], [2, 3], [3, 4]])
-b = [np.zeros([1, 3, 2]) for _ in range(2)]
-b[0] += a
-b[1] += a*2
-b = np.reshape(b, [2, 1, 3, 2])
-print(b.shape)
-print(b)
+def test1():
+    print('np.eye(5)[1]: ', np.eye(5)[1])
+    a = np.array([[1, 2], [2, 3], [3, 4]])
+    b = [np.zeros([1, 3, 2]) for _ in range(2)]
+    b[0] += a
+    b[1] += a*2
+    b = np.reshape(b, [2, 1, 3, 2])
+    print(b.shape)
+    print(b)
 
-print('---------------------------------')
-test_padding()
-print('---------------------')
-print(np.random.random())
+    print('---------------------------------')
+    test_padding()
+    print('---------------------')
+    print(np.random.random())
+
+def pad():
+    a = np.array([[1, 2, 3], [3, 4, 5], [4, 5, 6]])
+    b = np.pad(a, ((2,2), (2,1)))
+    print(b)
+
+def insert():
+    a = np.array([[1, 2, 3], [3, 4, 5], [4, 5, 6]])
+    c = np.insert(a, [1,2], 0, axis=0)
+    print(c)
+    d = np.insert(c, [1,2], 0, axis=1)
+    print(d)
+
+def rotate():
+    a = np.array([[1, 2, 3], [3, 4, 5], [4, 5, 6]])
+    print(a)
+    print('-----------')
+    b = np.rot90(a)
+    print(b)
+    print('-----------')
+    c = np.rot90(b)
+    print(c)
+
+
+if __name__ == "__main__":
+    rotate()
